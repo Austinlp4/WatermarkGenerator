@@ -5,8 +5,7 @@
     "RUN apk add --no-cache gcc musl-dev",
     "WORKDIR /",
     "COPY . .",
-    "RUN go build -o watermark-generator",
     "EXPOSE 8080",
-    "CMD [\"/watermark-generator\"]"
+    "CMD [\"./watermark-generator\"]"
   ]
 }
