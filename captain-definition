@@ -2,11 +2,11 @@
   "schemaVersion": 2,
   "dockerfileLines": [
     "FROM alpine:latest",
-    "RUN apk add --no-cache nodejs npm",
+    "RUN apk add --no-cache nodejs npm bash",
     "WORKDIR /app",
     "COPY . .",
     "RUN chmod +x ./watermark-generator",
     "EXPOSE 8080",
-    "CMD [\"./watermark-generator\"]"
+    "CMD [\"/bin/bash\", \"./watermark-generator\"]"
   ]
 }
