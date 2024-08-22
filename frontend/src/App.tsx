@@ -36,7 +36,7 @@ function App() {
   const [textColor, setTextColor] = useState('#ffffff');
   const [opacity, setOpacity] = useState(0.5);
   const [fontSize, setFontSize] = useState(100);
-  const [spacing, setSpacing] = useState(200);
+  const [spacing, setSpacing] = useState(500);
   const [isLoading, setIsLoading] = useState(false);
   const [watermarkedImage, setWatermarkedImage] = useState<string | null>(null);
   const [donationStatus, setDonationStatus] = useState<string | null>(null);
@@ -175,7 +175,7 @@ function App() {
                                   value={spacing}
                                   onChange={(_, newValue) => setSpacing(newValue as number)}
                                   min={50}
-                                  max={800}
+                                  max={1600}
                                   step={5}
                                 />
                               </Box>
