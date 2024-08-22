@@ -12,7 +12,6 @@ import (
 	"watermark-generator/db"
 	"watermark-generator/watermark"
 
-	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
@@ -20,12 +19,8 @@ import (
 var reactApp embed.FS
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("Error loading .env file: %v", err)
-	} else {
-		log.Println(".env file loaded successfully")
-	}
+	// Environment variables are already set by CapRover
+	log.Println("Initializing application")
 }
 
 func main() {
@@ -64,7 +59,7 @@ func main() {
 
 	// Setup CORS
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8080"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8080", "http://watermark-generator.com", "https://www.watermark-generator.com"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

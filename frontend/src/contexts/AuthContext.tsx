@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (token) {
         try {
           console.log('Attempting to fetch user with token:', token);
-          const response = await fetch('http://localhost:8080/api/current-user', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/current-user`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },

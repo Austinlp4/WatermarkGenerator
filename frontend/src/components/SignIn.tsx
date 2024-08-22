@@ -33,9 +33,10 @@ const SignIn = () => {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    console.log('VITE_API_URL: ', import.meta.env.VITE_API_URL)
     setError('');
     try {
-      const response = await fetch('http://localhost:8080/api/signin', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password: password.trim() }),
