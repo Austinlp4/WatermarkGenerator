@@ -57,6 +57,11 @@ func main() {
 			apiMux.ServeHTTP(w, r)
 			return
 		}
+		// Serve index.html for all non-API routes
+		if _, err := fsys.Open(strings.TrimPrefix(r.URL.Path, "/")); err != nil {
+			http.ServeFile(w, r, "frontend/dist/index.html")
+			return
+		}
 		fileServer.ServeHTTP(w, r)
 	})
 
