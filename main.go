@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"watermark-generator/api"
@@ -50,7 +51,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	mux.Handle("/", http.FileServer(http.FS(fsys)))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+		http.FileServer(http.FS(fsys)).ServeHTTP(w, r)
+	})
 
 	// Serve uploaded files
 	uploadDir := "./uploads"

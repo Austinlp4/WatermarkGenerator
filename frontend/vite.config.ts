@@ -8,5 +8,6 @@ export default defineConfig({
     proxy: {
       '/api': process.env.VITE_API_URL || 'https://watermark-generator.com'
     }
-  }
+  },
+  base: '/',
 })
