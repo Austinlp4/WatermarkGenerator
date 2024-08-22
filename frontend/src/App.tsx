@@ -175,7 +175,7 @@ function App() {
                                   value={spacing}
                                   onChange={(_, newValue) => setSpacing(newValue as number)}
                                   min={50}
-                                  max={200}
+                                  max={800}
                                   step={5}
                                 />
                               </Box>
