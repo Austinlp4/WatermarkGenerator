@@ -51,12 +51,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fileServer := http.FileServer(http.FS(fsys))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
-			http.NotFound(w, r)
+			apiMux.ServeHTTP(w, r)
 			return
 		}
-		http.FileServer(http.FS(fsys)).ServeHTTP(w, r)
+		fileServer.ServeHTTP(w, r)
 	})
 
 	// Serve uploaded files
