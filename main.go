@@ -39,6 +39,7 @@ func main() {
 	apiMux.HandleFunc("/api/process-payment", handler.ProcessPaymentHandler)
 	apiMux.HandleFunc("/api/create-checkout-session", handler.CreateCheckoutSessionHandler)
 	apiMux.HandleFunc("/api/test-db", handler.TestDBConnectionHandler)
+	apiMux.HandleFunc("/api/download", handler.DownloadHandler) // Add this line where you set up your routes
 
 	// Create the main mux
 	mux := http.NewServeMux()

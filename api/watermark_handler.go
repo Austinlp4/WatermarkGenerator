@@ -5,10 +5,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"watermark-generator/db"
-	"watermark-generator/models"
 	"watermark-generator/watermark"
 
 	"github.com/lucasb-eyer/go-colorful"
@@ -33,6 +34,8 @@ func (h *WatermarkHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		h.WatermarkHandler(w, r)
+	case http.MethodGet:
+		h.DownloadHandler(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -129,22 +132,26 @@ func (h *WatermarkHandler) WatermarkHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *WatermarkHandler) DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	// Get the user from the context
-	user := r.Context().Value("user").(*models.User)
-	if user == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Get the image path from the query parameters
 	imagePath := r.URL.Query().Get("path")
 	if imagePath == "" {
 		http.Error(w, "Image path is required", http.StatusBadRequest)
 		return
 	}
 
+	// Ensure the path is within the uploads directory
+	fullPath := filepath.Join("./uploads", filepath.Clean(imagePath))
+	if !strings.HasPrefix(fullPath, "./uploads/") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
 	// Serve the file
-	http.ServeFile(w, r, imagePath)
+	http.ServeFile(w, r, fullPath)
 }
 
 func parseColor(s string) (color.Color, error) {

@@ -24,7 +24,7 @@ import ImagePreview from './components/ImagePreview';
 import AppBarComponent from './components/AppBarComponent';
 import { useAuth } from './hooks/useAuth';
 import AdminPage from './components/AdminPage';
-import { useNavigate } from 'react-router-dom';
+import AuthModal from './components/AuthModal';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -40,7 +40,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [watermarkedImage, setWatermarkedImage] = useState<string | null>(null);
   const [donationStatus, setDonationStatus] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -69,7 +69,12 @@ function App() {
 
   const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!file || !user) return;
+    if (!file) return;
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
 
     setIsLoading(true);
     const formData = new FormData();
@@ -105,12 +110,16 @@ function App() {
   }, [file, watermarkText, textColor, opacity, fontSize, spacing, user]);
 
   const handleDownload = useCallback(() => {
-    if (watermarkedImage && user) {
-      window.location.href = `/api/download?path=${watermarkedImage}&token=${user.token}`;
-    } else if (!user) {
-      navigate('/signin');
+    if (watermarkedImage) {
+      // Create a temporary anchor element
+      const link = document.createElement('a');
+      link.href = watermarkedImage;
+      link.download = 'watermarked_image.png'; // You can set any filename you want
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-  }, [watermarkedImage, user, navigate]);
+  }, [watermarkedImage]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -273,6 +282,10 @@ function App() {
             </Alert>
           </Snackbar>
         </Elements>
+        <AuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
     </ThemeProvider>
   );
 }
