@@ -12,32 +12,36 @@ import (
 	"watermark-generator/db"
 	"watermark-generator/watermark"
 
+	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
 
 //go:embed frontend/dist
 var reactApp embed.FS
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	} else {
+		log.Println(".env file loaded successfully")
+	}
+}
+
 func main() {
 	// Connect to MongoDB
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		mongoURI = "mongodb://localhost:27017/watermark-generator" // Default to localhost if not set
-	}
-	db.Connect(mongoURI)
+	db.Connect()
 
 	watermarkService := watermark.NewService()
-	authHandler := &api.AuthHandler{DB: db.Client.Database("watermark-generator")} // Initialize AuthHandler
-	handler := api.NewHandler(watermarkService, authHandler)
+	authHandler := api.NewAuthHandler()
+	handler := api.NewWatermarkHandler(watermarkService)
 
 	// Create a new mux for API routes
 	apiMux := http.NewServeMux()
 	api.SetupAuthRoutes(apiMux, authHandler) // Register auth routes with authHandler
-	apiMux.HandleFunc("/api/watermark", handler.WatermarkHandler.ServeHTTP)
+	apiMux.HandleFunc("/api/watermark", handler.WatermarkHandler)
 	apiMux.HandleFunc("/api/process-payment", handler.ProcessPaymentHandler)
-	apiMux.HandleFunc("/api/create-checkout-session", func(w http.ResponseWriter, r *http.Request) {
-		handler.CreateCheckoutSessionHandler(w, r)
-	})
+	apiMux.HandleFunc("/api/create-checkout-session", handler.CreateCheckoutSessionHandler)
 	apiMux.HandleFunc("/api/test-db", handler.TestDBConnectionHandler)
 
 	// Create the main mux

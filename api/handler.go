@@ -2,57 +2,46 @@ package api
 
 import (
 	"context"
-	"os"
+	"watermark-generator/db"
 	"watermark-generator/watermark"
 
 	"log"
 
 	"net/http"
 
-	"github.com/joho/godotenv"
 	"github.com/rs/cors"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
-var db *mongo.Client
-
 func init() {
-	// Load .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
+	db.Connect()
+
+	client := db.GetClient()
+	if client == nil {
+		log.Fatal("Failed to connect to MongoDB")
 	}
 
-	// Initialize MongoDB client with authentication
-	clientOptions := options.Client().ApplyURI(os.Getenv("MONGODB_URI")).SetAuth(options.Credential{
-		Username:      "root",
-		Password:      "Seahawks",
-		AuthMechanism: "SCRAM-SHA-256",
-	})
-	client, err := mongo.Connect(context.Background(), clientOptions)
+	log.Println("Successfully connected to MongoDB")
+
+	// Test the connection by performing a simple operation
+	collection := client.Database("watermark-generator").Collection("test")
+	_, err := collection.InsertOne(context.Background(), bson.M{"test": "connection"})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to insert test document:", err)
 	}
 
-	// Check the connection
-	err = client.Ping(context.Background(), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db = client
+	log.Println("Successfully inserted test document")
 }
 
 type Handler struct {
 	*WatermarkHandler
-	*AuthHandler // Add AuthHandler to the Handler struct
+	*AuthHandler
 }
 
 func NewHandler(service *watermark.Service, authHandler *AuthHandler) *Handler {
 	return &Handler{
 		WatermarkHandler: NewWatermarkHandler(service),
-		AuthHandler:      authHandler, // Initialize AuthHandler
+		AuthHandler:      authHandler,
 	}
 }
 

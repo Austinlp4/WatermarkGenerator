@@ -11,7 +11,8 @@ import (
 	"github.com/stripe/stripe-go/v72/paymentintent"
 )
 
-func (h *Handler) ProcessPaymentHandler(w http.ResponseWriter, r *http.Request) {
+// Add this method to the WatermarkHandler struct
+func (h *WatermarkHandler) ProcessPaymentHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -55,7 +56,7 @@ func (h *Handler) ProcessPaymentHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (h *Handler) CreateCheckoutSessionHandler(w http.ResponseWriter, r *http.Request) {
+func (h *WatermarkHandler) CreateCheckoutSessionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return

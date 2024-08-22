@@ -73,7 +73,7 @@ func (s *Service) applyRepeatedWatermark(img *image.RGBA, text string, textColor
 
 	bounds := img.Bounds()
 	// Set base spacing appropriate for font size, then apply spacing multiplier
-	baseSpacing := fontSize / 10
+	baseSpacing := fontSize / 100
 	verticalSpacing := int(baseSpacing * spacing)
 	horizontalSpacing := int(baseSpacing * spacing)
 

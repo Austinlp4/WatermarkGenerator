@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 
+	"watermark-generator/db"
 	"watermark-generator/models"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -22,6 +23,12 @@ import (
 
 type AuthHandler struct {
 	DB *mongo.Database
+}
+
+func NewAuthHandler() *AuthHandler {
+	return &AuthHandler{
+		DB: db.GetDatabase(),
+	}
 }
 
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +89,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	user.ID = primitive.NewObjectID()
 
 	// Insert the new user into the database
-	collection := db.Database("watermark-generator").Collection("users")
+	collection := h.DB.Collection("users")
 	_, err = collection.InsertOne(context.Background(), user)
 	if err != nil {
 		log.Printf("Failed to insert user into database: %v", err)
@@ -115,7 +122,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Attempting to login user: %s", credentials.Username)
 	log.Printf("Provided password: %s", credentials.Password)
 
-	collection := db.Database("watermark-generator").Collection("users")
+	collection := h.DB.Collection("users")
 	var user models.User
 	err = collection.FindOne(context.Background(), bson.M{"username": credentials.Username}).Decode(&user)
 	if err != nil {
@@ -239,7 +246,7 @@ func (h *AuthHandler) SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	credentials.Password = strings.TrimSpace(credentials.Password)
 
-	collection := db.Database("watermark-generator").Collection("users")
+	collection := h.DB.Collection("users")
 	var user models.User
 	err = collection.FindOne(context.Background(), bson.M{"username": credentials.Username}).Decode(&user)
 	if err != nil {
@@ -299,7 +306,7 @@ func (h *AuthHandler) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch all users from the database
-	collection := db.Database("watermark-generator").Collection("users")
+	collection := h.DB.Collection("users")
 	cursor, err := collection.Find(context.Background(), bson.M{})
 	if err != nil {
 		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
@@ -324,7 +331,7 @@ func (h *AuthHandler) DeleteAllUsersHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	collection := db.Database("watermark-generator").Collection("users")
+	collection := h.DB.Collection("users")
 	result, err := collection.DeleteMany(context.Background(), bson.M{})
 	if err != nil {
 		http.Error(w, "Failed to delete users", http.StatusInternalServerError)

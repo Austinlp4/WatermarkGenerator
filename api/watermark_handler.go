@@ -7,21 +7,25 @@ import (
 	"os"
 	"strconv"
 
+	"watermark-generator/db"
 	"watermark-generator/models"
 	"watermark-generator/watermark"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type WatermarkHandler struct {
 	service *watermark.Service
 	logger  *log.Logger
+	DB      *mongo.Database
 }
 
 func NewWatermarkHandler(service *watermark.Service) *WatermarkHandler {
 	return &WatermarkHandler{
 		service: service,
 		logger:  log.New(os.Stdout, "API: ", log.LstdFlags),
+		DB:      db.GetDatabase(),
 	}
 }
 
