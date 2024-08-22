@@ -1,0 +1,17 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb+srv://Austinlp4:Seahawks4!@watermark-generator.u938s.mongodb.net/?retryWrites=true&w=majority&appName=watermark-generator
+      - MONGODB_PASS=Seahawks4!
+      - MONGODB_USER=Austinlp4
+      - MONGODB_CLUSTER=watermark-generator.u938s.mongodb.net
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
