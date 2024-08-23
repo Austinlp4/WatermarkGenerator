@@ -73,7 +73,13 @@ func main() {
 
 	// Setup CORS
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8080", "http://watermark-generator.com", "https://www.watermark-generator.com"},
+		AllowedOrigins: []string{
+			"http://localhost:5173",
+			"http://localhost:8080",
+			"http://watermark-generator.com",
+			"https://www.watermark-generator.com",
+			"https://watermark-generator.com",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
