@@ -1,6 +1,6 @@
 import { AppBar, Container, Toolbar, IconButton, Typography, Avatar, Menu, MenuItem, Divider, CircularProgress } from '@mui/material';
 import { WaterDrop as WatermarkIcon, AccountCircle } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import theme from '../theme';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -9,6 +9,11 @@ const AppBarComponent = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, [user]);
 
   console.log('user from app bar: ', user);
 
@@ -66,7 +71,7 @@ const AppBarComponent = () => {
           </Typography>
           <div>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-              {user === undefined ? (
+              {isLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : user ? (
                 <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
@@ -76,6 +81,17 @@ const AppBarComponent = () => {
                 <AccountCircle fontSize="large" />
               )}
             </IconButton>
+            {/* <IconButton onClick={handleMenu} sx={{ p: 0 }}>
+              {user === undefined ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : user ? (
+                <Avatar sx={{ bgcolor: theme.palette.secondary.main }}>
+                  {user.username?.[0]}
+                </Avatar>
+              ) : (
+                <AccountCircle fontSize="large" />
+              )}
+            </IconButton> */}
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}

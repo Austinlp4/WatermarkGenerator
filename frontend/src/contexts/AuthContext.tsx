@@ -7,7 +7,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (user: User) => void;
+  login: (userData: User) => void;
   logout: () => void;
 }
 
@@ -15,75 +15,28 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      console.log('Initial token from localStorage:', token);
-
-      if (token) {
-        try {
-          console.log('Attempting to fetch user with token:', token);
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/current-user`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const responseText = await response.text();
-            if (responseText) {
-              const userData = JSON.parse(responseText);
-              console.log('User data fetched successfully:', userData);
-              setUser({ ...userData, token });
-            } else {
-              console.error('Empty response from server');
-              setError('Empty response from server');
-              localStorage.removeItem('token');
-            }
-          } else {
-            console.error('Unexpected response status:', response.status);
-            const responseText = await response.text();
-            console.error('Response text:', responseText);
-            setError(`Failed to fetch user: ${response.status} ${responseText}`);
-            localStorage.removeItem('token');
-          }
-        } catch (error) {
-          console.error('Failed to fetch user:', error);
-          setError(`Network error: ${(error as Error).message || 'Unknown error'}`);
-          localStorage.removeItem('token');
-        }
-      } else {
-        console.log('No token found in localStorage');
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('user'); // Remove invalid data
       }
-    };
-
-    fetchUser();
+    }
   }, []);
 
   const login = (userData: User) => {
-    console.log('Logging in user:', userData);
     setUser(userData);
-    localStorage.setItem('token', userData.token);
-    console.log('Token set in localStorage:', userData.token);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
-    console.log('Logging out user');
     setUser(null);
-    localStorage.removeItem('token');
-    console.log('Token removed from localStorage');
+    localStorage.removeItem('user');
   };
-
-  if (error) {
-    return (
-      <div>
-        <p>Error: {error}</p>
-        <button onClick={() => { setError(null); logout(); }}>Clear error and logout</button>
-      </div>
-    );
-  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

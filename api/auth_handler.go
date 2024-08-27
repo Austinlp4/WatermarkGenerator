@@ -186,8 +186,7 @@ func (h *AuthHandler) CurrentUserHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Fetch user from database using claims.Subject (which should be the user ID)
-	var user models.User
+	// Use the subject as the user ID
 	objectID, err := primitive.ObjectIDFromHex(claims.Subject)
 	if err != nil {
 		log.Printf("Invalid ObjectID: %v", err)
@@ -195,6 +194,8 @@ func (h *AuthHandler) CurrentUserHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Fetch user from database using claims.Subject (which should be the user ID)
+	var user models.User
 	err = h.DB.Collection("users").FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -262,8 +263,8 @@ func (h *AuthHandler) SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Generate a token that lasts for a week
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID.Hex(), // Use user.ID.Hex() instead of user.ID
-		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(),
+		"sub": user.ID.Hex(), // Use "sub" instead of "user_id"
+		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
