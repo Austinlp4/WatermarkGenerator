@@ -41,6 +41,8 @@ function App() {
   const [watermarkedImage, setWatermarkedImage] = useState<string | null>(null);
   const [donationStatus, setDonationStatus] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [watermarkImage, setWatermarkImage] = useState<File | null>(null);
+  const [watermarkSize, setWatermarkSize] = useState(25);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -79,17 +81,27 @@ function App() {
     setIsLoading(true);
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('text', watermarkText);
-    formData.append('color', textColor);
+    formData.append('uniqueId', Date.now().toString());
     formData.append('opacity', opacity.toString());
-    formData.append('fontSize', fontSize.toString());
     formData.append('spacing', spacing.toString());
 
+    let endpoint = '/api/watermark/text';
+
+    if (watermarkImage) {
+      endpoint = '/api/watermark/image';
+      formData.append('watermarkImage', watermarkImage);
+      formData.append('watermarkSize', watermarkSize.toString());
+    } else {
+      formData.append('text', watermarkText);
+      formData.append('color', textColor);
+      formData.append('fontSize', fontSize.toString());
+    }
+
     try {
-      const response = await fetch('/api/watermark', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.token}`,
+          'Authorization': `Bearer ${user?.token || ''}`,
         },
         body: formData,
       });
@@ -98,16 +110,22 @@ function App() {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setPreview(url);
-        setWatermarkedImage(url);
+        setWatermarkedImage(`${url}?t=${Date.now()}`);
       } else {
         console.error('Error applying watermark');
+        const text = await response.text();
+        console.error('Error response:', text);
       }
     } catch (error) {
       console.error('Error:', error);
+      if (error instanceof Response) {
+        const text = await error.text();
+        console.error('Error response:', text);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [file, watermarkText, textColor, opacity, fontSize, spacing, user]);
+  }, [file, watermarkText, textColor, opacity, fontSize, spacing, user, watermarkImage, watermarkSize]);
 
   const handleDownload = useCallback(() => {
     if (watermarkedImage) {
@@ -189,6 +207,26 @@ function App() {
                                 />
                               </Box>
                               
+                              <Box>
+                                <Typography gutterBottom>Watermark Size (%)</Typography>
+                                <Slider
+                                  value={watermarkSize}
+                                  onChange={(_, newValue) => setWatermarkSize(newValue as number)}
+                                  min={5}
+                                  max={100}
+                                  step={1}
+                                />
+                              </Box>
+                              
+                              <Box>
+                                <Typography gutterBottom>Watermark Image</Typography>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setWatermarkImage(e.target.files ? e.target.files[0] : null)}
+                                />
+                              </Box>
+                              
                               <Button type="submit" variant="contained" color="primary" disabled={!file}>
                                 Apply Watermark
                               </Button>
@@ -249,7 +287,7 @@ function App() {
             >
               <Container maxWidth="sm">
                 <Typography variant="body2" color="text.secondary" align="center">
-                  {'Copyright © '}
+                  {'Copyright  '}
                     Watermark Generator{' '}
                   {new Date().getFullYear()}
                   {'.'}

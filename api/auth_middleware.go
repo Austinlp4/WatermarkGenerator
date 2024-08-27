@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -25,8 +26,10 @@ const userContextKey contextKey = "user"
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Println("AuthMiddleware: Checking authorization header")
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
+			log.Println("AuthMiddleware: No authorization header found")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -34,48 +37,53 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Remove 'Bearer ' prefix if present
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Validate the alg is what you expect:
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
-
+		// Validate the token
+		user, err := validateToken(tokenString)
 		if err != nil {
+			log.Printf("AuthMiddleware: %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// Get the user ID from the token claims
-			userID, ok := claims["user_id"].(string)
-			if !ok {
-				http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-				return
-			}
-
-			// Fetch the user from the database
-			user, err := GetUserByID(userID)
-			if err != nil {
-				http.Error(w, "User not found", http.StatusUnauthorized)
-				return
-			}
-
-			// Set the user in the request context
-			ctx := context.WithValue(r.Context(), userContextKey, user)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		}
+		// Set the user in the request context
+		ctx := context.WithValue(r.Context(), userContextKey, user)
+		log.Println("AuthMiddleware: User authenticated successfully")
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
-func validateToken(token string) (*User, error) {
-	// Implement token validation logic here
-	// This should check if the token is valid and return the associated user
-	// For now, we'll return a mock user
-	return &User{ID: "123", Username: "testuser"}, nil
+func validateToken(tokenString string) (*User, error) {
+	// Parse the token
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error parsing token: %v", err)
+	}
+
+	// Validate the token and extract claims
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		// Get the user ID from the token claims
+		userID, ok := claims["user_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid token claims")
+		}
+
+		// Fetch the user from the database
+		user, err := GetUserByID(userID)
+		if err != nil {
+			return nil, fmt.Errorf("user not found: %v", err)
+		}
+
+		return user, nil
+	} else {
+		return nil, fmt.Errorf("invalid token")
+	}
 }
 
 func GetUserByID(userID string) (*User, error) {

@@ -35,11 +35,13 @@ func main() {
 	// Create a new mux for API routes
 	apiMux := http.NewServeMux()
 	api.SetupAuthRoutes(apiMux, authHandler) // Register auth routes with authHandler
-	apiMux.HandleFunc("/api/watermark", handler.WatermarkHandler)
+	// apiMux.HandleFunc("/api/watermark", handler.WatermarkHandler)
 	apiMux.HandleFunc("/api/process-payment", handler.ProcessPaymentHandler)
 	apiMux.HandleFunc("/api/create-checkout-session", handler.CreateCheckoutSessionHandler)
 	apiMux.HandleFunc("/api/test-db", handler.TestDBConnectionHandler)
 	apiMux.HandleFunc("/api/download", handler.DownloadHandler) // Add this line where you set up your routes
+	apiMux.HandleFunc("/api/watermark/text", handler.TextWatermarkHandler)
+	apiMux.HandleFunc("/api/watermark/image", handler.ImageWatermarkHandler)
 
 	// Create the main mux
 	mux := http.NewServeMux()
@@ -90,7 +92,7 @@ func main() {
 		Addr:         ":8080",
 		Handler:      c.Handler(mux),
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 60 * time.Second, // Increase this to 60 seconds
 		IdleTimeout:  60 * time.Second,
 	}
 	log.Println("Server starting on :8080")
