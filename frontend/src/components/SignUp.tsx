@@ -25,8 +25,6 @@ const encodedWavySvg = encodeURIComponent(wavySvg);
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,23 +33,32 @@ const SignUp = () => {
     event.preventDefault();
     setError('');
 
+    const payload = { email, password: password.trim() };
+    console.log('Sending payload:', payload);
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, firstName, email, password: password.trim() }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         navigate('/signin');
       } else {
-        const data = await response.json();
-        setError(data.message || 'Registration failed');
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const data = await response.json();
+          setError(data.message || 'Registration failed');
+        } else {
+          const text = await response.text();
+          setError(text || 'Registration failed');
+        }
       }
     } catch (error) {
-      console.error(error);
+      console.error('Fetch error:', error);
       setError('An unexpected error occurred');
     }
   };
@@ -66,27 +73,13 @@ const SignUp = () => {
         bgcolor: 'background.paper',
       }}>
         <Box sx={{ maxWidth: 400, mx: 'auto' }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ color: 'primary.main' }}>
             Join Watermark Wizard
           </Typography>
           <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
             Sign up to start your creative journey.
           </Typography>
           <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              label="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              fullWidth
-              margin="normal"
-            />
             <TextField
               label="Email"
               value={email}
@@ -102,13 +95,13 @@ const SignUp = () => {
               fullWidth
               margin="normal"
             />
-            {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+            {error && <Typography color="error" sx={{ mt: 2 }}>{JSON.parse(error)?.message}</Typography>}
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2, py: 1.5, bgcolor: 'primary.main', '&:hover': { bgcolor: 'primary.dark' } }}>
               Sign Up
             </Button>
             <Grid container justifyContent="center">
               <Grid item>
-                <Link href="/signin" variant="body2" sx={{color: 'white'}}>Already have an account? Sign In</Link>
+                <Link href="/signin" variant="body2" sx={{color: 'primary.main'}}>Already have an account? Sign In</Link>
               </Grid>
             </Grid>
           </Box>

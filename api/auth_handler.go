@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"os"
 	"time"
 
@@ -32,45 +31,41 @@ func NewAuthHandler() *AuthHandler {
 }
 
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Read the entire request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Failed to read request body: %v", err)
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
-	}
-	log.Printf("Raw request body: %s", string(body))
-
-	// Attempt to unmarshal the JSON
 	var user models.User
-	if err := json.Unmarshal(body, &user); err != nil {
-		log.Printf("Failed to unmarshal JSON: %v", err)
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Printf("Error decoding request body: %v", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Log the received user data
-	log.Printf("Received user data: %+v", user)
+	log.Printf("Received registration request for email: %s, password length: %d", user.Email, len(user.Password))
+
+	// Check if email is empty
+	if user.Email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email cannot be empty"})
+		return
+	}
 
 	// Check if password is empty
 	if user.Password == "" {
-		log.Println("Password is empty after JSON unmarshal")
-		http.Error(w, "Password cannot be empty", http.StatusBadRequest)
+		log.Printf("Password is empty for email: %s", user.Email)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Password cannot be empty"})
 		return
 	}
 
-	// Trim the password
-	user.Password = strings.TrimSpace(user.Password)
-	log.Printf("Password after trim: '%s', length: %d", user.Password, len(user.Password))
-
-	if user.Password == "" {
-		log.Println("Password is empty after trimming")
-		http.Error(w, "Password cannot be empty", http.StatusBadRequest)
+	// Check if email already exists
+	var existingUser models.User
+	err = h.DB.Collection("users").FindOne(context.Background(), bson.M{"email": user.Email}).Decode(&existingUser)
+	if err == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Email already exists"})
+		return
+	} else if err != mongo.ErrNoDocuments {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Failed to check email uniqueness"})
 		return
 	}
 
@@ -78,7 +73,8 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Printf("Failed to hash password: %v", err)
-		http.Error(w, "Failed to process password", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Failed to process password"})
 		return
 	}
 
@@ -93,11 +89,12 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.InsertOne(context.Background(), user)
 	if err != nil {
 		log.Printf("Failed to insert user into database: %v", err)
-		http.Error(w, "Failed to register user", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Failed to register user"})
 		return
 	}
 
-	log.Printf("User registered successfully: %s", user.Username)
+	log.Printf("User registered successfully: %s", user.Email)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User registered successfully"})
@@ -105,7 +102,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
-		Username string `json:"username"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
@@ -119,34 +116,34 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	credentials.Password = strings.TrimSpace(credentials.Password)
 	log.Printf("Password length after trim: %d", len(credentials.Password))
 
-	log.Printf("Attempting to login user: %s", credentials.Username)
+	log.Printf("Attempting to login user: %s", credentials.Email)
 	log.Printf("Provided password: %s", credentials.Password)
 
 	collection := h.DB.Collection("users")
 	var user models.User
-	err = collection.FindOne(context.Background(), bson.M{"username": credentials.Username}).Decode(&user)
+	err = collection.FindOne(context.Background(), bson.M{"email": credentials.Email}).Decode(&user)
 	if err != nil {
-		log.Printf("User not found: %s", credentials.Username)
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		log.Printf("User not found: %s", credentials.Email)
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	log.Printf("Stored hashed password for user %s: %s", user.Username, user.Password)
+	log.Printf("Stored hashed password for user %s: %s", user.Email, user.Password)
 	log.Printf("Provided password: %s", credentials.Password)
 
 	// Check if the stored password looks like a bcrypt hash
 	if !strings.HasPrefix(user.Password, "$2a$") && !strings.HasPrefix(user.Password, "$2b$") && !strings.HasPrefix(user.Password, "$2y$") {
-		log.Printf("Warning: Stored password for user %s does not appear to be a bcrypt hash", user.Username)
+		log.Printf("Warning: Stored password for user %s does not appear to be a bcrypt hash", user.Email)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
 	if err != nil {
-		log.Printf("Password comparison failed for user %s: %v", user.Username, err)
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		log.Printf("Password comparison failed for user %s: %v", user.Email, err)
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
-	log.Printf("Password match successful for user: %s", credentials.Username)
+	log.Printf("Password match successful for user: %s", credentials.Email)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
 }
@@ -208,13 +205,18 @@ func (h *AuthHandler) CurrentUserHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	log.Printf("User found: %s", user.Username)
+	log.Printf("User found: %s", user.Email)
 
 	// Prepare the response
-	response := map[string]string{
-		"id":       user.ID.Hex(),
-		"username": user.Username,
-		"email":    user.Email,
+	response := map[string]interface{}{
+		"id":                    user.ID.Hex(),
+		"email":                 user.Email,
+		"stripeCustomerId":      user.StripeCustomerID,
+		"subscriptionStatus":    user.SubscriptionStatus,
+		"subscriptionId":        user.SubscriptionId,
+		"subscriptionExpiresAt": user.SubscriptionExpiresAt,
+		"dailyDownloads":        user.DailyDownloads,
+		"lastDownloadDate":      user.LastDownloadDate,
 	}
 
 	// Send the response
@@ -235,7 +237,7 @@ func (h *AuthHandler) SignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var credentials struct {
-		Username string `json:"username"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
@@ -249,15 +251,15 @@ func (h *AuthHandler) SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	collection := h.DB.Collection("users")
 	var user models.User
-	err = collection.FindOne(context.Background(), bson.M{"username": credentials.Username}).Decode(&user)
+	err = collection.FindOne(context.Background(), bson.M{"email": credentials.Email}).Decode(&user)
 	if err != nil {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
 	if err != nil {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
@@ -274,12 +276,19 @@ func (h *AuthHandler) SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// After successful authentication:
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Sign in successful",
-		"username": user.Username,
-		"token":    tokenString,
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":                    user.ID.Hex(),
+		"email":                 user.Email,
+		"token":                 tokenString,
+		"stripeCustomerId":      user.StripeCustomerID,
+		"subscriptionStatus":    user.SubscriptionStatus,
+		"subscriptionId":        user.SubscriptionId,
+		"subscriptionExpiresAt": user.SubscriptionExpiresAt,
+		"dailyDownloads":        user.DailyDownloads,
+		"lastDownloadDate":      user.LastDownloadDate,
 	})
 }
 
@@ -353,4 +362,5 @@ func SetupAuthRoutes(mux *http.ServeMux, handler *AuthHandler) {
 	mux.HandleFunc("/api/current-user", handler.CurrentUserHandler)
 	mux.HandleFunc("/api/users", handler.GetUsersHandler)
 	mux.HandleFunc("/api/users/delete-all", handler.DeleteAllUsersHandler)
+	mux.HandleFunc("/api/user", handler.CurrentUserHandler)
 }

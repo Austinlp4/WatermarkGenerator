@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"watermark-generator/api"
 	"watermark-generator/db"
@@ -31,17 +30,22 @@ func main() {
 	watermarkService := watermark.NewService()
 	authHandler := api.NewAuthHandler()
 	handler := api.NewWatermarkHandler(watermarkService)
+	stripeHandler := api.NewStripeHandler(db.GetDatabase())
 
 	// Create a new mux for API routes
 	apiMux := http.NewServeMux()
-	api.SetupAuthRoutes(apiMux, authHandler) // Register auth routes with authHandler
-	// apiMux.HandleFunc("/api/watermark", handler.WatermarkHandler)
+	api.SetupAuthRoutes(apiMux, authHandler)
 	apiMux.HandleFunc("/api/process-payment", handler.ProcessPaymentHandler)
 	apiMux.HandleFunc("/api/create-checkout-session", handler.CreateCheckoutSessionHandler)
 	apiMux.HandleFunc("/api/test-db", handler.TestDBConnectionHandler)
-	apiMux.HandleFunc("/api/download", handler.DownloadHandler) // Add this line where you set up your routes
+	apiMux.HandleFunc("/api/download", handler.DownloadHandler)
 	apiMux.HandleFunc("/api/watermark/text", handler.TextWatermarkHandler)
 	apiMux.HandleFunc("/api/watermark/image", handler.ImageWatermarkHandler)
+	apiMux.HandleFunc("/api/create-subscription", stripeHandler.CreateSubscription)
+	apiMux.HandleFunc("/api/cancel-subscription", stripeHandler.CancelSubscription)
+	apiMux.HandleFunc("/api/webhook", stripeHandler.HandleWebhook)
+	apiMux.HandleFunc("/api/watermark/bulk/text", handler.BulkTextWatermarkHandler)
+	apiMux.HandleFunc("/api/watermark/bulk/image", handler.BulkImageWatermarkHandler)
 
 	// Create the main mux
 	mux := http.NewServeMux()
@@ -56,6 +60,7 @@ func main() {
 	}
 	fileServer := http.FileServer(http.FS(fsys))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Received request: %s %s", r.Method, r.URL.Path)
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			apiMux.ServeHTTP(w, r)
 			return
@@ -73,28 +78,21 @@ func main() {
 	os.MkdirAll(uploadDir, os.ModePerm)
 	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 
-	// Setup CORS
+	// Create a new CORS handler
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
 			"http://localhost:5173",
 			"http://localhost:8080",
-			"http://watermark-generator.com",
-			"https://www.watermark-generator.com",
-			"https://watermark-generator.com",
-		},
+		}, // Add your frontend URL here
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
-		Debug:            true, // Enable debugging
 	})
 
-	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      c.Handler(mux),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 60 * time.Second, // Increase this to 60 seconds
-		IdleTimeout:  60 * time.Second,
-	}
-	log.Println("Server starting on :8080")
-	log.Fatal(srv.ListenAndServe())
+	// Wrap your main handler with the CORS handler
+	corsHandler := c.Handler(mux)
+
+	// Start the server
+	log.Printf("Server starting on port 8080")
+	http.ListenAndServe(":8080", corsHandler)
 }

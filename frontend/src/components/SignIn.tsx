@@ -27,19 +27,18 @@ const encodedWavySvg = encodeURIComponent(wavySvg);
 const SignIn = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log('VITE_API_URL: ', import.meta.env.VITE_API_URL)
     setError('');
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password: password.trim() }),
+        body: JSON.stringify({ email, password: password.trim() }),
       });
 
       if (!response.ok) {
@@ -49,7 +48,7 @@ const SignIn = () => {
       }
 
       const data = await response.json();
-      login({ username: data.username, token: data.token }); // Update auth context with user data and token
+      login(data);
       navigate('/');
     } catch (err) {
       console.error('Error during sign in:', err);
@@ -67,7 +66,7 @@ const SignIn = () => {
         bgcolor: 'background.paper',
       }}>
         <Box sx={{ maxWidth: 400, mx: 'auto' }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+          <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" sx={{ color: 'primary.main' }}>
             Welcome to Watermark Wizard
           </Typography>
           <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
@@ -76,11 +75,11 @@ const SignIn = () => {
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
+              label="Email"
               variant="outlined"
               margin="normal"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
             <TextField
@@ -104,10 +103,10 @@ const SignIn = () => {
             </Button>
             <Grid container justifyContent="space-between">
               <Grid item>
-                <Link href="#" variant="body2" sx={{color: 'white'}}>Forgot password?</Link>
+                <Link href="#" variant="body2" sx={{color: 'primary.main'}}>Forgot password?</Link>
               </Grid>
               <Grid item>
-                <Link href="/signup" variant="body2" sx={{color: 'white'}}>Don't have an account? Sign Up</Link>
+                <Link href="/signup" variant="body2" sx={{color: 'primary.main'}}>Don't have an account? Sign Up</Link>
               </Grid>
             </Grid>
           </Box>
@@ -148,17 +147,6 @@ const SignIn = () => {
           gap: 2, 
           zIndex: 1 
         }}>
-          <Button 
-            variant="contained" 
-            size="large" 
-            sx={{ 
-              bgcolor: 'white', 
-              color: '#0099ff', 
-              '&:hover': { bgcolor: '#e0e0e0' },
-            }}
-          >
-            Start Creating
-          </Button>
           <Button 
             variant="outlined" 
             size="large" 
