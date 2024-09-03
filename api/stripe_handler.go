@@ -101,7 +101,7 @@ func (h *StripeHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String("price_1PuLFQKMkKsEKY1BCJTf7sCb"), // Replace with your actual Price ID
+				Price:    stripe.String(os.Getenv("PRO_PRICE_ID")), // Use PRO_PRICE_ID from env file
 				Quantity: stripe.Int64(1),
 			},
 		},
