@@ -9,6 +9,7 @@ ARG CACHE_BUST=1
 # Use the build argument in a RUN command to force a rebuild
 RUN echo "Cache bust: ${CACHE_BUST}"
 RUN npm run build
+RUN npm run postbuild || true
 
 # Build backend
 FROM golang:1.21-alpine AS backend-builder
