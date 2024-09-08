@@ -92,6 +92,13 @@ func (h *StripeHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	proPriceID := os.Getenv("PRO_PRICE_ID")
+	if proPriceID == "" {
+		log.Println("PRO_PRICE_ID is not set")
+		http.Error(w, "Server configuration error", http.StatusInternalServerError)
+		return
+	}
+
 	// Create a new Checkout Session for the subscription
 	params := &stripe.CheckoutSessionParams{
 		Customer: stripe.String(user.StripeCustomerID),
@@ -101,7 +108,7 @@ func (h *StripeHandler) CreateSubscription(w http.ResponseWriter, r *http.Reques
 		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(os.Getenv("PRO_PRICE_ID")), // Use PRO_PRICE_ID from env file
+				Price:    stripe.String(proPriceID),
 				Quantity: stripe.Int64(1),
 			},
 		},
