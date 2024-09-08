@@ -5,6 +5,7 @@ import StarIcon from '@mui/icons-material/Star';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { loadStripe } from '@stripe/stripe-js';
+import SEO from './SEO';
 
 const AnimatedCard = styled(motion(Card))(() => ({
   height: '100%',
@@ -115,123 +116,130 @@ const Subscription = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
-      <Typography variant="h3" align="center" gutterBottom component={motion.h3}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        sx={{ fontWeight: 'bold', mb: 4 }}
-      >
-        Choose Your Perfect Plan
-      </Typography>
-      <Grid container spacing={4} justifyContent="center">
-        {/* Free Tier Card */}
-        <Grid item xs={12} md={6}>
-          <AnimatedCard initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-            <CardHeader>
-              <Typography variant="h4" align="center" gutterBottom>
-                Free Tier
-              </Typography>
-              <Typography variant="subtitle1" align="center">
-                Perfect for getting started
-              </Typography>
-            </CardHeader>
-            <StyledCardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-                <FeatureList>
-                  <FeatureItem>
-                    <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="body1">1 high quality watermark generation daily</Typography>
-                  </FeatureItem>
-                  <FeatureItem>
-                    <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="body1">Customizable text or image watermarks</Typography>
-                  </FeatureItem>
-                  <FeatureItem>
-                    <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="body1">Instant delivery</Typography>
-                  </FeatureItem>
-                </FeatureList>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 2, mt: 'auto' }}>
-                  Start protecting your images today at no cost!
+    <>
+      <SEO 
+        title="Subscription Plans"
+        description="Choose the perfect Watermark Generator subscription plan for your needs. Protect your images with our free and pro options."
+        canonicalUrl="https://watermark-generator.com/subscription"
+      />
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography variant="h3" align="center" gutterBottom component={motion.h3}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          sx={{ fontWeight: 'bold', mb: 4 }}
+        >
+          Choose Your Perfect Plan
+        </Typography>
+        <Grid container spacing={4} justifyContent="center">
+          {/* Free Tier Card */}
+          <Grid item xs={12} md={6}>
+            <AnimatedCard initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+              <CardHeader>
+                <Typography variant="h4" align="center" gutterBottom>
+                  Free Tier
                 </Typography>
-              </div>
-              <AnimatedButton
-                fullWidth
-                variant="outlined"
-                color="primary"
-                onClick={() => handleSubscribe('free')}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Get Started for Free
-              </AnimatedButton>
-            </StyledCardContent>
-          </AnimatedCard>
-        </Grid>
-        {/* Pro Tier Card */}
-        <Grid item xs={12} md={6}>
-          <AnimatedCard initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-            <CardHeader sx={{ 
-              background: 'linear-gradient(45deg, #64FFDA 30%, #00B8D4 90%)',
-              color: '#1A202C' // Dark color for better contrast
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
-                <StarIcon sx={{ mr: 1 }} />
-                <Typography variant="h4" align="center">
-                  Pro Tier
+                <Typography variant="subtitle1" align="center">
+                  Perfect for getting started
                 </Typography>
-              </Box>
-              <Typography variant="subtitle1" align="center">
-                Unlock unlimited potential
-              </Typography>
-            </CardHeader>
-            <StyledCardContent>
-              <Typography variant="h5" align="center" gutterBottom color="secondary" sx={{ fontWeight: 'bold' }}>
-                $4.99/month
-              </Typography>
-              <Box sx={{ mb: 3 }}>
-                <FeatureItem>
-                  <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="body1">All Free Tier features</Typography>
-                </FeatureItem>
-                <FeatureItem>
-                  <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="body1">Bulk watermark generation</Typography>
-                </FeatureItem>
-                <FeatureItem>
-                  <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="body1">Unlimited generations a day</Typography>
-                </FeatureItem>
-                <FeatureItem>
-                  <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
-                  <Typography variant="body1">Advanced watermark placement and options</Typography>
-                </FeatureItem>
-              </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Take your image protection to the next level!
-              </Typography>
-              <AnimatedButton
-                fullWidth
-                variant="contained"
-                sx={{
-                  background: 'linear-gradient(45deg, #64FFDA 30%, #00B8D4 90%)',
-                  color: '#1A202C', // Dark color to match the header text
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #00B8D4 30%, #64FFDA 90%)',
-                  }
-                }}
-                onClick={() => handleSubscribe('pro')}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Upgrade to Pro
-              </AnimatedButton>
-            </StyledCardContent>
-          </AnimatedCard>
+              </CardHeader>
+              <StyledCardContent>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                  <FeatureList>
+                    <FeatureItem>
+                      <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="body1">1 high quality watermark generation daily</Typography>
+                    </FeatureItem>
+                    <FeatureItem>
+                      <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="body1">Customizable text or image watermarks</Typography>
+                    </FeatureItem>
+                    <FeatureItem>
+                      <CheckCircleOutlineIcon color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="body1">Instant delivery</Typography>
+                    </FeatureItem>
+                  </FeatureList>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2, mt: 'auto' }}>
+                    Start protecting your images today at no cost!
+                  </Typography>
+                </div>
+                <AnimatedButton
+                  fullWidth
+                  variant="outlined"
+                  color="primary"
+                  onClick={() => handleSubscribe('free')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Get Started for Free
+                </AnimatedButton>
+              </StyledCardContent>
+            </AnimatedCard>
+          </Grid>
+          {/* Pro Tier Card */}
+          <Grid item xs={12} md={6}>
+            <AnimatedCard initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+              <CardHeader sx={{ 
+                background: 'linear-gradient(45deg, #64FFDA 30%, #00B8D4 90%)',
+                color: '#1A202C' // Dark color for better contrast
+              }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1 }}>
+                  <StarIcon sx={{ mr: 1 }} />
+                  <Typography variant="h4" align="center">
+                    Pro Tier
+                  </Typography>
+                </Box>
+                <Typography variant="subtitle1" align="center">
+                  Unlock unlimited potential
+                </Typography>
+              </CardHeader>
+              <StyledCardContent>
+                <Typography variant="h5" align="center" gutterBottom color="secondary" sx={{ fontWeight: 'bold' }}>
+                  $4.99/month
+                </Typography>
+                <Box sx={{ mb: 3 }}>
+                  <FeatureItem>
+                    <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="body1">All Free Tier features</Typography>
+                  </FeatureItem>
+                  <FeatureItem>
+                    <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="body1">Bulk watermark generation</Typography>
+                  </FeatureItem>
+                  <FeatureItem>
+                    <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="body1">Unlimited generations a day</Typography>
+                  </FeatureItem>
+                  <FeatureItem>
+                    <CheckCircleOutlineIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="body1">Advanced watermark placement and options</Typography>
+                  </FeatureItem>
+                </Box>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Take your image protection to the next level!
+                </Typography>
+                <AnimatedButton
+                  fullWidth
+                  variant="contained"
+                  sx={{
+                    background: 'linear-gradient(45deg, #64FFDA 30%, #00B8D4 90%)',
+                    color: '#1A202C', // Dark color to match the header text
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #00B8D4 30%, #64FFDA 90%)',
+                    }
+                  }}
+                  onClick={() => handleSubscribe('pro')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Upgrade to Pro
+                </AnimatedButton>
+              </StyledCardContent>
+            </AnimatedCard>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Container>
+    </>
   );
 };
 
