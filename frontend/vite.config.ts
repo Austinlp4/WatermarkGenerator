@@ -6,8 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': process.env.VITE_API_URL || 'https://watermark-generator.com'
-    }
+      '/api': {
+        target: process.env.VITE_API_URL || 'https://watermark-generator.com', // Make sure this is the correct URL for your Go server
+      },
+    },
   },
   base: '/',
 })

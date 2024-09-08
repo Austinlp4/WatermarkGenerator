@@ -1,11 +1,11 @@
-import React from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, CircularProgress, Typography, ImageList, ImageListItem } from '@mui/material';
 import { keyframes } from '@emotion/react';
 
 interface ImagePreviewProps {
-  preview: string | null;
+  previews?: string[];
   isLoading: boolean;
-  watermarkedImage: string | null;
+  watermarkedImages?: string[];
 }
 
 const waveAnimation = keyframes`
@@ -28,16 +28,149 @@ const wavySvg = `
 
 const encodedWavySvg = encodeURIComponent(wavySvg);
 
-const ImagePreview: React.FC<ImagePreviewProps> = ({ preview, isLoading }) => {
+const addWatermarkToPreview = (imageUrl: string): Promise<string> => {
+  console.log('addWatermarkToPreview called with:', imageUrl);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      console.log('Image loaded, dimensions:', img.width, 'x', img.height);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Unable to get canvas context'));
+        return;
+      }
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      // Add more opaque overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Set up text style
+      ctx.fillStyle = 'rgba(58, 134, 255, .6)';
+      ctx.font = 'bold 130px Arial'; // Increased font size
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Add drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
+      
+      // Draw text (wrapped if necessary)
+      const text = 'watermark-generator.com';
+      const maxWidth = canvas.width * 0.9; // 90% of canvas width
+      const lineHeight = 120;
+      const words = text.split(' ');
+      let line = '';
+      let y = canvas.height / 2;
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          ctx.fillText(line, canvas.width / 2, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, canvas.width / 2, y);
+      
+      console.log('Large watermark added successfully');
+      resolve(canvas.toDataURL());
+    };
+    img.onerror = () => {
+      console.error('Failed to load image');
+      reject(new Error('Failed to load image'));
+    };
+    img.src = imageUrl;
+  });
+};
+
+const ImagePreview: React.FC<ImagePreviewProps> = ({ previews = [], isLoading, watermarkedImages = [] }) => {
+  const [localWatermarkedImages, setLocalWatermarkedImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    const applyWatermarks = async () => {
+      const watermarked = await Promise.all(watermarkedImages.map(addWatermarkToPreview));
+      setLocalWatermarkedImages(watermarked);
+    };
+    applyWatermarks();
+  }, [watermarkedImages]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%', padding: '0 1rem' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      height: '100%', 
+      width: '100%', 
+      padding: '16px',
+      boxSizing: 'border-box',
+      overflow: 'hidden' // Prevent overflow
+    }}>
       {isLoading ? (
         <CircularProgress />
-      ) : preview ? (
-        <>
-          <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '70vh' }} />
-        </>
+      ) : previews.length > 0 ? (
+        <Box sx={{ 
+          width: '100%', 
+          height: '100%', 
+          overflow: 'auto' // Allow scrolling if needed
+        }}>
+          <ImageList 
+            sx={{ 
+              width: '100%',
+              padding: 0,
+              ...(previews.length === 1 
+                ? { 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    height: '100%',
+                    maxWidth: '600px',
+                    margin: '0 auto'
+                  } 
+                : {
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '16px',
+                  }
+              )
+            }} 
+            cols={previews.length === 1 ? 1 : undefined} 
+            rowHeight={previews.length === 1 ? 'auto' : undefined}
+          >
+            {previews.map((_, index) => (
+              <ImageListItem 
+                key={index} 
+                sx={previews.length === 1 
+                  ? { width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' } 
+                  : { aspectRatio: '1 / 1' }
+                }
+              >
+                <img
+                  src={localWatermarkedImages[index] || previews[index]}
+                  alt={`Preview ${index + 1}`}
+                  loading="lazy"
+                  style={{ 
+                    objectFit: previews.length === 1 ? 'contain' : 'cover', 
+                    width: '100%', 
+                    height: '100%',
+                    maxHeight: previews.length === 1 ? '100%' : 'none',
+                  }}
+                />
+              </ImageListItem>
+            ))}
+          </ImageList>
+        </Box>
       ) : (
         <Box sx={{
           width: '100%',

@@ -6,11 +6,13 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lucasb-eyer/go-colorful v1.2.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/rs/cors v1.11.0
 	github.com/stripe/stripe-go/v72 v72.122.0
+	github.com/stripe/stripe-go/v75 v75.11.0
 	go.mongodb.org/mongo-driver v1.16.1
 	golang.org/x/crypto v0.22.0
 	golang.org/x/image v0.19.0

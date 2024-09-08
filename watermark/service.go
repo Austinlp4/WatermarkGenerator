@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"time"
 
 	"database/sql"
 
@@ -22,7 +23,6 @@ import (
 
 	"crypto/rand"
 	"encoding/base64"
-	"time"
 
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/nfnt/resize"
@@ -287,6 +287,9 @@ func (s *Service) ApplyImageWatermark(r io.Reader, watermarkR io.Reader, opacity
 		}
 	}
 
+	// Add the bottom watermark text
+	addBottomWatermark(result, "watermark-generator.com", color.RGBA{R: 173, G: 216, B: 230, A: 255}, 0.5)
+
 	// Encode the result
 	var buf bytes.Buffer
 	if err := s.encodeImage(&buf, result, format); err != nil {
@@ -295,4 +298,47 @@ func (s *Service) ApplyImageWatermark(r io.Reader, watermarkR io.Reader, opacity
 
 	log.Printf("ApplyImageWatermark: Watermark applied successfully")
 	return buf.Bytes(), nil
+}
+
+func addBottomWatermark(img *image.RGBA, text string, textColor color.Color, opacity float64) {
+	bounds := img.Bounds()
+	watermarkHeight := 30 // Height of the watermark text area
+
+	// Create a new RGBA image for the watermark text
+	watermarkImg := image.NewRGBA(image.Rect(0, 0, bounds.Dx(), watermarkHeight))
+
+	// Set the background to transparent
+	for y := 0; y < watermarkHeight; y++ {
+		for x := 0; x < bounds.Dx(); x++ {
+			watermarkImg.Set(x, y, color.RGBA{0, 0, 0, 0})
+		}
+	}
+
+	// Draw the text onto the watermark image
+	drawText(watermarkImg, text, textColor, opacity, 10, 20)
+
+	// Draw the watermark image onto the result image
+	draw.Draw(img, image.Rect(0, bounds.Dy()-watermarkHeight, bounds.Dx(), bounds.Dy()), watermarkImg, image.Point{}, draw.Over)
+}
+
+func drawText(img *image.RGBA, text string, textColor color.Color, opacity float64, x, y int) {
+	f, err := truetype.Parse(gobold.TTF)
+	if err != nil {
+		log.Printf("drawText: Failed to parse font: %v", err)
+		return
+	}
+
+	face := truetype.NewFace(f, &truetype.Options{
+		Size: 20,
+		DPI:  72,
+	})
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(applyOpacity(textColor, opacity)),
+		Face: face,
+		Dot:  fixed.Point26_6{X: fixed.I(x), Y: fixed.I(y)},
+	}
+
+	d.DrawString(text)
 }

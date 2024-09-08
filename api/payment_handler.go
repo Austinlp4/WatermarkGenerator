@@ -91,8 +91,8 @@ func (h *WatermarkHandler) CreateCheckoutSessionHandler(w http.ResponseWriter, r
 			},
 		},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String("http://localhost:5173/?donation=success"),
-		CancelURL:  stripe.String("http://localhost:5173/?donation=cancelled"),
+		SuccessURL: stripe.String(os.Getenv("VITE_API_URL") + "/?donation=success"),
+		CancelURL:  stripe.String(os.Getenv("VITE_API_URL") + "/?donation=cancelled"),
 	}
 
 	session, err := session.New(params)
